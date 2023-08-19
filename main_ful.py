@@ -1,12 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-# @Copyright (c) 2022 Baidu.com, Inc. All Rights Reserved
-# @Time    : 2023/2/1 14:38
-# @Author  : Liu Tianyuan (liutianyuan02@baidu.com)
-# @Site    :
-# @File    : run_train_FNO.py
-"""
 import h5py
 import pandas as pd
 import scipy
