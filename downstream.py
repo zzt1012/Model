@@ -42,12 +42,12 @@ def train(dataloader, netmodel, device, lossfunc, optimizer, scheduler):
         xx = xx.to(device)     #xx:fields   yy：输出nu,f
         yy = yy.to(device)
         #gd = feature_transform(xx)
-        pred = netmodel(xx)  #使用网络模型netmodel特征变换后的数据进行前向传播
+        pred = netmodel(xx) 
         loss = lossfunc(pred, yy)
 
-        optimizer.zero_grad()  #使用优化器 optimizer的zero_grad方法将之前的梯度清零，以便进行新一轮的反向传播。
-        loss.backward()  #对损失反向传播，计算梯度
-        optimizer.step() #使用优化器 optimizer的step方法更新模型的参数，根据计算得到的梯度进行优化。
+        optimizer.zero_grad()  
+        loss.backward()  
+        optimizer.step()
         train_loss += loss.item()
     scheduler.step()
 
@@ -109,7 +109,8 @@ if __name__ == "__main__":
 
 
 
-#_-------------------------------------first:  { ntrain:600, nvalid:100, batchsize:20, epochs:400,learning rate:0.001, scheduler_step:300, scheduler_gamma:0.1} {p小9%，f大20%}
+#_-------------------------------------
+    first:  { ntrain:600, nvalid:100, batchsize:20, epochs:400,learning rate:0.001, scheduler_step:300, scheduler_gamma:0.1} {p小9%，f大20%}
     ####训练集参数,适度减小  (400;100)
     ntrain = 6000
     nvalid = 1000
@@ -135,7 +136,7 @@ if __name__ == "__main__":
     file_path = os.path.join('../data', 'dim_pro8_single_all.mat')
     reader = MatLoader(file_path)
     fields = reader.read_field('field')
-    # fields=fields[:,::2,:,:]  #第一、三、四个维度不变，第二个维度缩小一半
+    # fields=fields[:,::2,:,:]  
     design = reader.read_field('data')
     target = torch.concat((reader.read_field('Nu'), reader.read_field('f')), dim=-1)
     #target=reader.read_field('Nu')
@@ -163,7 +164,7 @@ if __name__ == "__main__":
     # valid_y = output[ntrain:ntrain + nvalid, ::r1, ::r2][:, :s1, :s2]
 
     #del reader
-    x_normalizer = DataNormer(train_x.numpy(), method='min-max')#本设计都采用线性化归一化方式
+    x_normalizer = DataNormer(train_x.numpy(), method='min-max')
     train_x = x_normalizer.norm(train_x)
     valid_x = x_normalizer.norm(valid_x)
 
@@ -187,7 +188,6 @@ if __name__ == "__main__":
         Net_model = DownSampleNet2d(in_sizes=train_x.shape[1:], out_sizes=train_y.shape[-1], width=32, depth=4).to(Device)
     elif name == 'FNO':
         Net_model = FNO2d(in_dim=train_x.shape[-1], out_dim=train_y.shape[-1], width=64, depth=4).to(Device)
-#unet不涉及steps。因为只有非定常问题才会涉及steps
     elif name == 'UNet':
         Net_model = UNet2d(in_sizes=train_x.shape[1:], out_sizes=train_y.shape[1:], width=32, depth=6).to(Device)
 
@@ -216,11 +216,6 @@ if __name__ == "__main__":
         log_loss[1].append(valid(valid_loader, Net_model, Device, Loss_func))
         print('epoch: {:6d}, lr: {:.3e}, train_step_loss: {:.3e}, valid_step_loss: {:.3e}, cost: {:.2f}'.
               format(epoch, learning_rate, log_loss[0][-1], log_loss[1][-1], time.time() - star_time))
-
-        #pred_par.append([Net_model.p.detach().cpu().item(), Net_model.f.detach().cpu().item()])
-        pred_par[0].append(train(train_loader, Net_model, Device, Loss_func, Optimizer, Scheduler))
-        pred_par[1].append(valid(valid_loader, Net_model, Device, Loss_func))
-
         star_time = time.time()
 
         train_coord, train_true, train_pred = inference(train_loader, Net_model, Device)
@@ -228,33 +223,6 @@ if __name__ == "__main__":
 
         torch.save({'log_loss': log_loss, 'net_model': Net_model.state_dict(), 'optimizer': Optimizer.state_dict()},
                    os.path.join(work_path, 'latest_model.pth'))
-
-        # train_coord = x_normalizer.back(train_coord)
-        # valid_coord = x_normalizer.back(valid_coord)
-        # train_true, valid_true = y_normalizer.back(train_true), y_normalizer.back(valid_true)
-        # train_pred, valid_pred = y_normalizer.back(train_pred), y_normalizer.back(valid_pred)
-        #
-        # data0 = []
-        # for fig_id in range(epochs):  # range20
-        #     pred_p = train_pred[fig_id][0]
-        #     true_p = train_true[fig_id][0]
-        #     error_p = abs(train_pred[fig_id][0] - train_true[-1][0]) / train_true[-1][0] * 100
-        #     pred_f = train_pred[-1][1]
-        #     true_f = train_true[-1][1]
-        #     error_f = abs(train_pred[-1][1] - train_true[-1][1]) / train_true[-1][1] * 100
-        #     row = [pred_p, true_p, error_p, pred_f, true_f, error_f]
-        #     data0.append(row)
-        #
-        #     df = pd.DataFrame(data0, columns=['p_p', 't_p', 'error_p', 'p_f', 't_f', 'erroe_f'])
-        #     df.to_excel('data0.xlsx', index=False)
-        #
-        #     print('pred p: {:.4f}, true p: {:.4f}, error p: {:.4f}%,'
-        #           'pred f: {:.4f}, true f: {:.4f}, error f : {:.4f}%'.
-        #           format(train_pred[-1][0], train_true[-1][0],
-        #                  abs(train_pred[-1][0] - train_true[-1][0]) / train_true[-1][0] * 100,
-        #                  train_pred[-1][1], train_true[-1][1],
-        #                  abs(train_pred[-1][1] - train_true[-1][1]) / train_true[-1][1] * 100))
-
 
         if epoch > 0 and epoch % 5 == 0:
             fig, axs = plt.subplots(1, 1, figsize=(15, 8), num=1)
@@ -282,20 +250,6 @@ if __name__ == "__main__":
             train_true, valid_true = y_normalizer.back(train_true), y_normalizer.back(valid_true)
             train_pred, valid_pred = y_normalizer.back(train_pred), y_normalizer.back(valid_pred)
 
-
-            #data0=[]
-            # for fig_id in range(10):
-            #     df = pd.DataFrame({
-            #         'pred p': [train_pred[fig_id][0]],
-            #         'true p': [train_true[fig_id][0]],
-            #         'error_p': [abs(train_pred[fig_id][0] - train_true[fig_id][0]) / train_true[fig_id][0] * 100],
-            #         'pred f': [train_pred[fig_id][1]],
-            #         'true f': [train_true[fig_id][1]],
-            #         'error_f': [abs(train_pred[fig_id][1] - train_true[fig_id][1]) / train_true[fig_id][1] * 100]
-            #     })
-            #     writer = pd.ExcelWriter(r"D:\pythonProject\applied_sciences\work_down\Down\downstream.xlsx")
-            #     df.to_excel(writer, index=False)
-            #     writer.save()
             try:
                 dff=pd.read_excel('data0.xlsx')
             except FileNotFoundError:
@@ -317,36 +271,7 @@ if __name__ == "__main__":
                                      train_pred[fig_id][1], train_true[fig_id][1],
                                      abs(train_pred[fig_id][1] - train_true[fig_id][1]) / train_true[fig_id][1] * 100))
                         data0=[pred_p,true_p,error_p,pred_f,true_f,error_f]
-
-#循环只保留了最后一个pred
-
                         #df1=pd.DataFrame()
                         df=pd.DataFrame([data0],columns=['p_nu','t_nu','error_nu','p_f','t_f','erroe_f'])
                         combined_df=pd.concat([dff,df],ignore_index=True)
             combined_df.to_excel('data0.xlsx',index=False)
-
-
-
-
-
-#-------------------只能保存一个
-
-                # df=pd.DataFrame()
-                # df['pred p']= [train_pred[fig_id][0]]
-                # df['true p']= [train_true[fig_id][0]]
-                # df['error_p']= [abs(train_pred[fig_id][0] - train_true[fig_id][0]) / train_true[fig_id][0] * 100]
-                # df['pred f']= [train_pred[fig_id][1]]
-                # df['true f']= [train_true[fig_id][1]]
-                # df['error_f']= [abs(train_pred[fig_id][1] - train_true[fig_id][1]) / train_true[fig_id][1] * 100]
-                #
-                # data2 = pd.ExcelWriter(r"D:\pythonProject\applied_sciences\work_down\Down\downall.xlsx")
-                # df.to_excel(data2,sheet_name='pred',index=False)
-
-
-                # fig, axs = plt.subplots(2, 1, figsize=(15, 8), num=2)
-                # Visual.plot_value(np.arange(len(pred_par)), np.array(pred_par)[:, 0][fig_id], 'p_pred')
-                # Visual.plot_value([0, len(pred_par) - 1], [Net_model.delta_p, Net_model.delta_p][fig_id], 'p_true')
-                # plt.subplot(212)
-                # Visual.plot_value(np.arange(len(pred_par)), np.array(pred_par)[:, -1][fig_id], 'f_pred')
-                # Visual.plot_value([0, len(pred_par) - 1], [Net_model.f,Net_model.f][fig_id], 'f_true')
-                # plt.savefig(os.path.join(work_path, 'pred_p_f.svg'))
