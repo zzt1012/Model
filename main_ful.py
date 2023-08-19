@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 from torchinfo import summary
 
-#这个函数可以用来生成输入图像的坐标网格，并与其他特征进行拼接，以提供位置信息。这可以帮助生成网络学习生成具有正确位置和结构的图像。
+#这个函数可以用来生成输入图像的坐标网格，并与其他特征进行拼接，以提供位置信息。
 #特征变换函数:输入x坐标转换为输入res
 def feature_transform(x):
     """
@@ -39,8 +39,7 @@ def feature_transform(x):
     gridx = gridx.reshape(1, size_x, 1, 1).repeat([batchsize, 1, size_y, 1])
     gridy = torch.linspace(0, 0.0003, size_y, dtype=torch.float32)
     gridy = gridy.reshape(1, 1, size_y, 1).repeat([batchsize, size_x, 1, 1])
-    return torch.cat((gridx, gridy), dim=-1).to(x.device) #沿着将 gridx 和 gridy 张量沿着最后一个维度进行拼接，
-                                                          # 并将拼接后的张量移动到与输入张量 x 相同的设备上。拼接后的张量作为输出返回。
+    return torch.cat((gridx, gridy), dim=-1).to(x.device) 
 
 
 def train(dataloader, netmodel, device, lossfunc, optimizer, scheduler):
@@ -62,20 +61,20 @@ def train(dataloader, netmodel, device, lossfunc, optimizer, scheduler):
         gd=xx[:,:,:,-2:]
         xx1=xx[:,:,:,:10]
 
-        pred = netmodel(xx1,gd)  #使用网络模型netmodel特征变换后的数据进行前向传播
+        pred = netmodel(xx1,gd)  
         loss = lossfunc(pred, yy)
 
 
         optimizer.zero_grad()
         loss.backward()
-        optimizer.step() #使用优化器 optimizer的step方法更新模型的参数，根据计算得到的梯度进行优化。
+        optimizer.step() 
         train_loss += loss.item()
 
 
     scheduler.step()
 
 
-    return train_loss / (batch + 1)/ batch_size  #返回每个批次的平均训练损失
+    return train_loss / (batch + 1)/ batch_size
 
 
 def valid(dataloader, netmodel, device, lossfunc):
@@ -152,14 +151,14 @@ if __name__ == "__main__":
     else:
         Device = torch.device('cpu')
 
-#----------------------过拟合：batchize过大、数据量过小
+#----------------------
 #FNO:     第一次：ntrain600,batchsize32,learning 0.001,step300,gamma0.3,width64
-#UNet:    ntrain:600,batchszie20,laerning rate0.00001,step300,gamma0.1.   note:UNet训练时，学习率过大会导致过拟合，保持在0.00001及其以下即可
+#UNet:    ntrain:600,batchszie20,laerning rate0.00001,step300,gamma0.1.  
     ####训练集参数
-    ntrain =6000 #600,1000   ，6000(过拟合)
-    nvalid =1000  #100,200     ，1000
+    ntrain =6000 #600,1000   
+    nvalid =1000  #100,200     
 
-    r1 = 2      #空间坐标x  若误差大可以取间隔2
+    r1 = 2      
     r2 = 1
     s1 = int(((794 - 1) / r1) + 1)   #265
     s2 = int(((40 - 1) / r2) + 1)    #40
@@ -168,8 +167,8 @@ if __name__ == "__main__":
     batch_size = 32 #一个批次处理20个图片
     epochs = 401
     learning_rate = 0.001   #0.001
-    scheduler_step = [200,300,400] #first300
-    scheduler_gamma = 0.1  #0.1   不加train_x归一化时gamma是0.5   gammm大于0.1就过拟合
+    scheduler_step = [200,300,400]   #first300
+    scheduler_gamma = 0.1  #0.1   
 
     print(epochs, learning_rate, scheduler_step, scheduler_gamma)
 
@@ -179,10 +178,9 @@ if __name__ == "__main__":
     file_path = os.path.join('data', 'dim_pro8_single_all.mat')
     reader = MatLoader(file_path)
     fields = reader.read_field('field')
-    # fields=fields[:,::2,:,:]  #第一、三、四个维度不变，第二个维度缩小一半
+    # fields=fields[:,::2,:,:]  
     design = reader.read_field('data')
     coords = reader.read_field('grids')[..., :2]
-    target = torch.concat((reader.read_field('Nu'), reader.read_field('f')), dim=-1)
     design_tile = torch.tile(design[:, None, None, :], (1, 792, 40, 1))
     input_size = design_tile.shape[1:]
     # layer = UNet2d(in_sizes=input_size, out_sizes=fields.shape[1:], width=32, depth=6)
@@ -198,7 +196,7 @@ if __name__ == "__main__":
     #batch_size,coords_x,coords_y,channel=fields.shape[0],fields.shape[1],fields.shape[2],fields.shape[3]
 
 
-#输入10+2，forward传入(x，grid),x->12,grid->2
+#输入10+2，forward传入(x，grid),x->10,grid->2
 
     input = torch.concat((design_tile,coords), dim=-1)
     output = fields
@@ -214,17 +212,16 @@ if __name__ == "__main__":
 
 
     del coords, design
-#train_x   (6000,264,40,12)  train_y  (6000,264,40,4)
-    #input两个通道，第一个通道设计变量，第二个空间坐标，取样时要保证两个通道的样本数量相同
+    #train_x   (6000,264,40,12)  train_y  (6000,264,40,4)
     train_x = input[:ntrain, ::r1, ::r2][:, :s1, :s2]
     train_y = output[:ntrain, ::r1, ::r2][:, :s1, :s2]
-#valid_x   (773,264,40,12)  valid_y (773,264,40,4)
+    #valid_x   (773,264,40,12)  valid_y (773,264,40,4)
     valid_x = input[ntrain:ntrain + nvalid, ::r1, ::r2][:, :s1, :s2]
     valid_y = output[ntrain:ntrain + nvalid, ::r1, ::r2][:, :s1, :s2]
 
 
     del reader
-    x_normalizer = DataNormer(train_x.numpy(), method='min-max')#本设计无法采用线性化归一化方式，会导致奇异化    train_x = x_normalizer.norm(train_x)
+    x_normalizer = DataNormer(train_x.numpy(), method='min-max')
     train_x=x_normalizer.norm(train_x)
     valid_x = x_normalizer.norm(valid_x)
     # print(train_x)
@@ -254,7 +251,7 @@ if __name__ == "__main__":
         Net_model = UpSampleNet2d(train_x.shape[-1], out_sizes=train_y.shape[1:], width=32, depth=4).to(Device)
     elif name == 'FNO':
         Net_model = FNO2d(in_dim=train_x.shape[-1], out_dim=train_y.shape[-1], modes=(32, 8),width=32, depth=4).to(Device)
-#unet不涉及steps。因为只有非定常问题才会涉及steps
+    #unet不涉及steps。因为只有非定常问题才会涉及steps
     elif name == 'UNet':
         Net_model = UNet2d(in_sizes=train_x.shape[1:], out_sizes=train_y.shape[1:], width=32, depth=6).to(Device)
     elif name=='DownSample':
@@ -307,7 +304,7 @@ if __name__ == "__main__":
             train_step = np.array(log_loss)[0, :]
             valid_step = np.array(log_loss)[1, :]
             df = pd.DataFrame({'Index': x, 'train_step': train_step, 'valid_step': valid_step})
-            writer = pd.ExcelWriter(r'D:\pythonProject\applied_sciences\work\UNet\loss.xlsx')
+            writer = pd.ExcelWriter(r'D:\pythonProject\work\UNet\loss.xlsx')
             df.to_excel(writer, index=False)
             writer.save()
 
@@ -336,56 +333,14 @@ if __name__ == "__main__":
             train_true, valid_true = y_normalizer.back(train_true), y_normalizer.back(valid_true)
             train_pred, valid_pred = y_normalizer.back(train_pred), y_normalizer.back(valid_pred)
 
-            # train_pred_new = train_pred.reshape([train_pred.shape[0], 396, 40, 4])
-            # valid_pred_new = valid_pred.reshape([train_pred.shape[0], 396, 40, 4])
-            # train_pred_new=np.array(train_pred_new)
-            # valid_pred_new=np.array(valid_pred_new)
-            # mdit={'train_pred':train_pred_new}
-            # mdit1={'valid_pred':valid_pred_new}
-            # scipy.io.savemat(os.path.join(work_path, 'train_pred.mat'), train_pred_new)
-            # scipy.io.savemat(os.path.join(work_path, 'valid_pred.mat'), valid_pred_new)
-
             np.save(os.path.join(work_path, "train_true.npy"), train_true)
             np.save(os.path.join(work_path, "valid_true.npy"), valid_true)
             np.save(os.path.join(work_path, "train_pred.npy"), train_pred)
             np.save(os.path.join(work_path, "valid_pred.npy"), valid_pred)
 
-
-
             # x = fields.shape  # 原始场shape(6773,792,40,4)
             # batch_size, coords_x, coords_y, channel = x.shape[0], x.shape[1], x.shape[2], x.shape[3]
 
-#--------------------------------保存excel
-            # import pandas as pd  #train_true(12,264,40,4)  true_true_f (12*264*40*4)   train_coord (12,264,40,2)
-            # train_true_f=np.array(train_true).reshape(-1,1)
-            # train_pred_f = np.array(train_pred).reshape(-1, 1)
-            # train_coord_f=np.array(train_coord).reshape(-1,1)
-            # df_train_true = pd.DataFrame(train_true_f,columns=['true'])
-            # df_train_pred = pd.DataFrame(train_pred_f,columns=['pred'])
-            # df_train_coord = pd.DataFrame(train_coord_f, columns=['coord'])
-            # # excel_file_name = "train_data.xlsx"
-            # # writer = pd.ExcelWriter(excel_file_name, engine='xlsxwriter')
-            # writer = pd.ExcelWriter(r'D:\pythonProject\applied_sciences\work\UNet\train.xlsx')
-            # df_train_true.to_excel(writer, sheet_name='Train_True', index=False)
-            # df_train_pred.to_excel(writer, sheet_name='Train_Pred', index=False)
-            # df_train_coord.to_excel(writer, sheet_name='Train_coord', index=False)
-            # #
-            # # df.to_excel(writer, index=False)
-            # writer.save()
-#_--------------------------------保存Mat
-            # train_true=train_true.reshape([train_true.shape[0], , , out_dim])
-            # train_pred = train_pred.reshape([train_pred.shape[0],,, out_dim])
-            # valid_true = valid_true.reshape([valid_true.shape[0],,, out_dim])
-            # valid_pred=valid_pred.reshape([valid_pred.shape[0], , , out_dim])
-            # train_true_path='train_true.mat'
-            # train_pred_path='train_pred.mat'
-            # valid_true_path='valid_true.mat'
-            # valid_pred_path='valid_pred.mat'
-            # h5py.File(train_true_path,{'train_true':train_true})
-            # h5py.File(train_pred_path, {'train_pred': train_pred})
-            # h5py.File(valid_true_path, {'valid_true': valid_true})
-            # h5py.File(valid_pred_path, {'valid_pred': valid_pred})
-#除了第一个whole，其余坐标重叠
             for fig_id in range(10):
                 fig, axs = plt.subplots(4, 3, figsize=(18, 8),num=2)
                 axs_flat = axs.flatten()
@@ -416,7 +371,6 @@ if __name__ == "__main__":
                 fig.savefig(os.path.join(work_path, 'train_solution_' + str(fig_id) + '_local_01.jpg'), dpi=600,
                             bbox_inches='tight')
                 plt.close(fig)
-#------------保存数据
 
             for fig_id in range(10):
                 fig, axs = plt.subplots(4, 3, figsize=(18, 8), num=5)
@@ -449,6 +403,3 @@ if __name__ == "__main__":
                             bbox_inches='tight')
                 plt.close(fig)
 
-
-
-    # #------------------------------参数记录
