@@ -247,9 +247,7 @@ if __name__ == "__main__":
     ################################################################
     # 建立网络
     train_x=train_x[:,:,:,:10]
-    if name == 'UpSample':
-        Net_model = UpSampleNet2d(train_x.shape[-1], out_sizes=train_y.shape[1:], width=32, depth=4).to(Device)
-    elif name == 'FNO':
+    if name == 'FNO':
         Net_model = FNO2d(in_dim=train_x.shape[-1], out_dim=train_y.shape[-1], modes=(32, 8),width=32, depth=4).to(Device)
     #unet不涉及steps。因为只有非定常问题才会涉及steps
     elif name == 'UNet':
@@ -259,8 +257,7 @@ if __name__ == "__main__":
 
 
     input1 = torch.randn(batch_size, train_x.shape[1], train_x.shape[2], train_x.shape[-1]).to(Device)
-    input2 = torch.randn(batch_size, train_x.shape[1], train_x.shape[2], 2).to(Device)
-    summary(Net_model, input_data=[input1,input2], device=Device)
+    summary(Net_model, input_data=[input1], device=Device)
 
     # 损失函数
     Loss_func = nn.MSELoss()
