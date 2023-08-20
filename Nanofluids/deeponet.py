@@ -81,7 +81,6 @@ def inference(dataloader, netmodel, device):
         f = f.to(device)
         f1 = f[:, :, :, :10]
         x = x.to(device)
-        #x1 = x[:, :, -2:]
         pred = netmodel([f1, ], x, size_set=False)
         #f1=[f,]
 
