@@ -30,9 +30,8 @@ def train(dataloader, netmodel, device, lossfunc, optimizer, scheduler):
         f = f.to(device)   #（1,792,40,12）
         f1=f[:,:,:,:10]
         x = x.to(device)   #（1,6773*792*40,2）
-       # x1=x[:,:,-2:]
-        u = u.to(device)  #（1,25344，4）
-        pred = netmodel([f1, ], x, size_set=False)    #f desigin 12   x coords 4    x1在forward只取了后三维
+        u = u.to(device)  
+        pred = netmodel([f1, ], x, size_set=False)   
 
         loss = lossfunc(pred, u)
 
@@ -59,7 +58,6 @@ def valid(dataloader, netmodel, device, lossfunc):
             f = f.to(device)
             f1 = f[:, :, :, :10]
             x = x.to(device)
-           # x1=x[:,:,-2:]
             u = u.to(device)
             pred = netmodel([f1, ], x, size_set=False)
 
@@ -79,7 +77,7 @@ def inference(dataloader, netmodel, device):
         out_pred: predicted fields
     """
     with torch.no_grad():
-        f, x, u = next(iter(dataloader))     #u真实物理场  x：coords   f:design_ 1维，    【f,]2维列表
+        f, x, u = next(iter(dataloader))     
         f = f.to(device)
         f1 = f[:, :, :, :10]
         x = x.to(device)
@@ -88,7 +86,7 @@ def inference(dataloader, netmodel, device):
         #f1=[f,]
 
     # equation = model.equation(u_var, y_var, out_pred)
-    return x.cpu().numpy(), x.cpu().numpy(), u.numpy(), pred.cpu().numpy()   #train_source,train_coord,此时train_coord是input后两个通道
+    return x.cpu().numpy(), x.cpu().numpy(), u.numpy(), pred.cpu().numpy()  
 
 
 if __name__ == "__main__":
@@ -144,7 +142,6 @@ if __name__ == "__main__":
     file_path = os.path.join('data', 'dim_pro8_single_all.mat')
     reader = MatLoader(file_path)
     fields = reader.read_field('field')
-    # fields=fields[:,::2,:,:]  #第一、三、四个维度不变，第二个维度缩小一半
     design = reader.read_field('data')
     coords = reader.read_field('grids')[..., :2]
     design_tile = torch.tile(design[:, None, None, :], (1, 792, 40, 1))
@@ -210,14 +207,10 @@ if __name__ == "__main__":
     #  Neural Networks
     ################################################################
     # 建立网络
-    #算子维度是设计变量,此处把设计变量和空间坐标分开，因为可以写多个branch_net（包含设计变量或边界条件的）
+    #此处把设计变量和空间坐标分开，可写多个branch_net（例如边界条件的）
     #planes_branch是branch_net中间隐藏层，planes_trunk是trunk_net隐藏层
     Net_model = DeepONetMulti(input_dim=2, operator_dims=[10, ], output_dim=4,
                               planes_branch=[64] * 3, planes_trunk=[64] * 2).to(Device)
-
-    # input1 = torch.randn(batch_size, train_u.shape[1], train_u.shape[2], train_u.shape[-1]).to(Device)
-    # # input2 = torch.randn(batch_size, train_x.shape[1], train_x.shape[2], 2).to(Device)
-    # summary(Net_model, input_data=[input1], device=Device)
 
     # 损失函数
     Loss_func = nn.MSELoss()
