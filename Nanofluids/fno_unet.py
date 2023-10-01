@@ -565,40 +565,11 @@ if __name__ == "__main__":
             # print('epoch: {:6d}, lr: {:.3e}, eqs_loss: {:.3e}, bcs_loss: {:.3e}, cost: {:.2f}'.
             #       format(epoch, learning_rate, log_loss[-1][0], log_loss[-1][1], time.time()-star_time))
             train_coord1, train_grid, train_true, train_pred = inference(train_loader, Net_model, Device)
-            # train_grid, train_coord, train_true, train_pred = inference(train_loader, Net_model, Device)
-            # valid_grid, valid_coord,  valid_true, valid_pred = inference(valid_loader, Net_model, Device)
             valid_coord1, valid_grid, valid_true, valid_pred = inference(valid_loader, Net_model, Device)
 
             torch.save({'log_loss': log_loss, 'net_model': Net_model.state_dict(), 'optimizer': Optimizer.state_dict()},
                        os.path.join(work_path, 'latest_model.pth'))
 
-            # Error_func.p = 1
-            # Err1a=Error_func.abs(valid_pred,valid_true)    #(*,4) ptuv
-            # Err1r=Error_func.rel(valid_pred,valid_true)
-            #
-            # Error_func.p=2
-            # Err2a=Error_func.abs(valid_pred, valid_true)   #
-            # Err2r=Error_func.rel(valid_pred, valid_true)
-            #
-            # Err1r_flat=np.ravel(Err1r)
-            #
-            # # Err = [[], []]
-            # # Err[0].append(Err1r)
-            # # Err[1].append(Err2r)
-            #
-            # fig, axs = plt.subplots(1,2, figsize=(10,10), num=2)
-            # # Visual.plot_box(fig, axs[0], Err1r, legends=Visual.field_name)
-            # # Visual.plot_box(fig, axs[1], Err2r, legends=Visual.field_name)
-            # # fig.savefig(os.path.join(work_path, 'valid_box' + str(fig_id) + '.jpg'), dpi=600,
-            # #             bbox_inches='tight')
-            # # plt.close(fig)
-            # Visual.plot_loss(fig, axs, np.arange(len(log_loss[0])), Err1r_flat, 'train_step')
-            # #Visual.plot_loss(fig, axs, np.arange(len(log_loss[0])), range(len(Err2r[0, :])), 'valid_step')
-            # fig.suptitle('training loss')
-            # fig.savefig(os.path.join(work_path, 'field_loss.svg'))
-            # plt.close(fig)
-
-            #
             train_coord_ne = x_normalizer.back(train_coord1)
             valid_coord_ne = x_normalizer.back(valid_coord1)
             train_coord = train_coord_ne[:, :, :, -2:]
@@ -609,15 +580,7 @@ if __name__ == "__main__":
             train_true, valid_true = y_normalizer.back(train_true), y_normalizer.back(valid_true)
             train_pred, valid_pred = y_normalizer.back(train_pred), y_normalizer.back(valid_pred)
 
-            # train_pred_new = train_pred.reshape([train_pred.shape[0], 396, 40, 4])
-            # valid_pred_new = valid_pred.reshape([train_pred.shape[0], 396, 40, 4])
-            # train_pred_new=np.array(train_pred_new)
-            # valid_pred_new=np.array(valid_pred_new)
-            # mdit={'train_pred':train_pred_new}
-            # mdit1={'valid_pred':valid_pred_new}
-            # scipy.io.savemat(os.path.join(work_path, 'train_pred.mat'), train_pred_new)
-            # scipy.io.savemat(os.path.join(work_path, 'valid_pred.mat'), valid_pred_new)
-
+   
             np.save(os.path.join(work_path, "train_true.npy"), train_true)
             np.save(os.path.join(work_path, "valid_true.npy"), valid_true)
             np.save(os.path.join(work_path, "train_pred.npy"), train_pred)
@@ -625,40 +588,6 @@ if __name__ == "__main__":
             np.save(os.path.join(work_path, "train_coord.npy"), train_coord)
             np.save(os.path.join(work_path, "valid_coord.npy"), valid_coord)
 
-            # x = fields.shape  # 原始场shape(6773,792,40,4)
-            # batch_size, coords_x, coords_y, channel = x.shape[0], x.shape[1], x.shape[2], x.shape[3]
-
-            # --------------------------------保存excel
-            # import pandas as pd  #train_true(12,264,40,4)  true_true_f (12*264*40*4)   train_coord (12,264,40,2)
-            # train_true_f=np.array(train_true).reshape(-1,1)
-            # train_pred_f = np.array(train_pred).reshape(-1, 1)
-            # train_coord_f=np.array(train_coord).reshape(-1,1)
-            # df_train_true = pd.DataFrame(train_true_f,columns=['true'])
-            # df_train_pred = pd.DataFrame(train_pred_f,columns=['pred'])
-            # df_train_coord = pd.DataFrame(train_coord_f, columns=['coord'])
-            # # excel_file_name = "train_data.xlsx"
-            # # writer = pd.ExcelWriter(excel_file_name, engine='xlsxwriter')
-            # writer = pd.ExcelWriter(r'D:\pythonProject\applied_sciences\work\UNet\train.xlsx')
-            # df_train_true.to_excel(writer, sheet_name='Train_True', index=False)
-            # df_train_pred.to_excel(writer, sheet_name='Train_Pred', index=False)
-            # df_train_coord.to_excel(writer, sheet_name='Train_coord', index=False)
-            # #
-            # # df.to_excel(writer, index=False)
-            # writer.save()
-            # _--------------------------------保存Mat
-            # train_true=train_true.reshape([train_true.shape[0], , , out_dim])
-            # train_pred = train_pred.reshape([train_pred.shape[0],,, out_dim])
-            # valid_true = valid_true.reshape([valid_true.shape[0],,, out_dim])
-            # valid_pred=valid_pred.reshape([valid_pred.shape[0], , , out_dim])
-            # train_true_path='train_true.mat'
-            # train_pred_path='train_pred.mat'
-            # valid_true_path='valid_true.mat'
-            # valid_pred_path='valid_pred.mat'
-            # h5py.File(train_true_path,{'train_true':train_true})
-            # h5py.File(train_pred_path, {'train_pred': train_pred})
-            # h5py.File(valid_true_path, {'valid_true': valid_true})
-            # h5py.File(valid_pred_path, {'valid_pred': valid_pred})
-            # 除了第一个whole，其余坐标重叠
             for fig_id in range(10):
                 fig, axs = plt.subplots(4, 3, figsize=(18, 8), num=4)
                 axs_flat = axs.flatten()
@@ -670,17 +599,6 @@ if __name__ == "__main__":
                 fig.savefig(os.path.join(work_path, 'train_solution_whole' + str(fig_id) + '.jpg'), dpi=600,
                             bbox_inches='tight')
                 plt.close(fig)
-
-                # fig, axs = plt.subplots(4, 3, figsize=(18, 10), num=5)
-                # axs_flat = axs.flatten()
-                # for ax in axs_flat:
-                #     ax.axis('off')
-                #     ax.set_frame_on(False)
-                # Visual.plot_fields_ms(fig, axs, train_true[fig_id], train_pred[fig_id], train_coord[fig_id],
-                #                       cmin_max=[[0.0015, 0.00012], [0.0025, 0.00040]])
-                # fig.savefig(os.path.join(work_path, 'train_solution_' + str(fig_id) + '_local.jpg'), dpi=600,
-                #             bbox_inches='tight')
-                # plt.close(fig)
 
                 fig, axs = plt.subplots(4, 3, figsize=(18, 10), num=5)
                 axs_flat = axs.flatten()
@@ -704,17 +622,6 @@ if __name__ == "__main__":
                 fig.savefig(os.path.join(work_path, 'valid_solution_whole' + str(fig_id) + '.jpg'), dpi=600,
                             bbox_inches='tight')
                 plt.close(fig)
-
-                # fig, axs = plt.subplots(4, 3, figsize=(20, 10), num=8)
-                # axs_flat = axs.flatten()
-                # for ax in axs_flat:
-                #     ax.axis('off')
-                #     ax.set_frame_on(False)
-                # Visual.plot_fields_ms(fig, axs, valid_true[fig_id], valid_pred[fig_id], valid_coord[fig_id],
-                #                       cmin_max=[[0.0010, 0.00012], [0.0025, 0.00045]])
-                # fig.savefig(os.path.join(work_path, 'valid_solution_' + str(fig_id) + '_local.jpg'), dpi=600,
-                #             bbox_inches='tight')
-                # plt.close(fig)
 
                 fig, axs = plt.subplots(4, 3, figsize=(18, 8), num=7)
                 axs_flat = axs.flatten()
