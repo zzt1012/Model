@@ -285,8 +285,8 @@ def Auto_Darcy(u, a, coords_tile):
 
     aux = a * ux
     auy = a * uy
-    auxx = grad(aux.sum(), coords_x, create_graph=False)[0]
-    auyy = grad(auy.sum(), coords_y, create_graph=False)[0]
+    auxx = torch.autograd.grad(aux.sum(), coords_x, create_graph=False)[0]
+    auyy = torch.autograd.grad(auy.sum(), coords_y, create_graph=False)[0]
     Du = - (auxx + auyy)
     return Du
 
