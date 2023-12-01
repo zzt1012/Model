@@ -408,7 +408,6 @@ if pretrain:
 #############
 # NOTE:
 # 1、FNO的data loss加入总loss，权重分配------>
-# 2、原始数据的coords——x and y 是分开的，数据预处理＋coords，目前是nu
 # 3、边界条件需要加上，当2的coords解决后
 
 
